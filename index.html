@@ -227,7 +227,7 @@ const SHOP=[
 const KEY='onmagotchi.v1';
 function fresh(){const now=Date.now();return{v:2,born:now,gt:0,last:now,stage:'egg',type:'A',hunger:3,happy:3,weight:5,poops:0,dirt:0,sick:false,sickT:0,
   lights:true,asleep:false,dead:false,mistakes:0,disc:25,points:0,inv:{cake:0,milk:0},own:{},eq:{},snacks:0,petCD:0,walkCD:0,
-  nextPoop:60*MIN,nextDirt:3*HOUR,nextFake:15*MIN,fakeCall:0,hungerT:0,happyT:0,poopDirtyT:0,starveT:0,hungerZeroT:0,happyZeroT:0,missH:false,missJ:false,lightsOnSleepT:0,name:'온마'}}
+  nextPoop:60*MIN,nextDirt:3*HOUR,nextFake:15*MIN,fakeCall:0,hungerT:0,happyT:0,poopDirtyT:0,starveT:0,hungerZeroT:0,happyZeroT:0,missH:false,missJ:false,lightsOnSleepT:0,awakeT:0,name:'온마'}}
 let S;
 try{const o=JSON.parse(localStorage.getItem(KEY)); if(o&&typeof o.gt==='number'){S=Object.assign(fresh(),o); S.v=2; if(!S.inv)S.inv={cake:0,milk:0}; if(S.stage==='adult'&&!S.type)S.type='A';}}catch(e){}
 if(!S)S=fresh();
@@ -235,6 +235,8 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
 
 let speed=1, quiet=false;
 const isNight=ts=>{const h=new Date(ts).getHours();return h>=22||h<8};
+const GROW_AWAKE=4*HOUR;    // 아기 → 어른: 깨어 있는 시간 4시간
+const NEWBORN_AWAKE=15*MIN; // 밤에 태어나면 15분 뒤 잠들어요
 const FAT={baby:15,adult:35}, SICKW={baby:25,adult:55};
 const isFat=()=>S.stage!=='egg'&&S.weight>=FAT[S.stage];
 const awake=()=>S.stage!=='egg'&&!S.dead&&!S.asleep;
@@ -245,7 +247,8 @@ function sim(dt){
   if(S.dead) return;
   S.gt+=dt;
   if(S.stage==='egg'){ if(S.gt>=45e3){S.stage='baby';S.nextFake=15*MIN;event('hatch')} return; }
-  if(S.stage==='baby' && S.gt>=HOUR){ evolve(); }
+  if(!S.asleep) S.awakeT+=dt;
+  if(S.stage==='baby' && S.awakeT>=GROW_AWAKE){ evolve(); }
   if(S.sick){S.sickT+=dt; if(S.sickT>12*HOUR){die();return}}
   if(S.asleep){
     if(S.lights){S.lightsOnSleepT+=dt; if(S.lightsOnSleepT>30*MIN){S.lightsOnSleepT=-1e15;S.mistakes++;}}
@@ -275,7 +278,7 @@ function die(){S.dead=true;S.sick=false;event('dead')}
 function updateSleep(ts){
   if(S.stage==='egg'||S.dead) return;
   const n=isNight(ts);
-  if(n&&!S.asleep){S.asleep=true;S.lightsOnSleepT=0;S.fakeCall=0;event('sleep')}
+  if(n&&!S.asleep&&!(S.stage==='baby'&&S.awakeT<NEWBORN_AWAKE)){S.asleep=true;S.lightsOnSleepT=0;S.fakeCall=0;event('sleep')}
   else if(!n&&S.asleep){S.asleep=false;S.lights=true;event('wake')}
 }
 // 자리를 비운 시간만큼 실제 시간 흐름을 따라잡기 (최대 7일)
