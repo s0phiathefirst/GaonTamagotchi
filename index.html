@@ -330,6 +330,11 @@ const isThin=()=>S.stage!=='egg'&&S.weight<THIN[S.stage];
 const isFat=()=>S.stage!=='egg'&&S.weight>=FAT[S.stage]+tr('fatW',0);
 const awake=()=>S.stage!=='egg'&&!S.dead&&!S.asleep;
 function needs(){return !S.dead&&S.stage!=='egg'&&(S.hunger===0||S.happy===0||S.poops>0||S.sick||(S.asleep&&S.lights)||S.fakeCall>0)}
+function growReason(){
+  const m=S.mistakes||0, d=S.disc||0;
+  return {T:'실수 없이 훈육까지 완벽했어요',R:`돌봄 실수 ${m}번`,G:S.snacks>=6?`간식 ${S.snacks}번`:'통통하게 자랐어요',
+    M:`게임 ${S.wins||0}번 승리 · 훈육 ${d}%`,P:`놀이·산책 ${S.act||0}번`,A:`훈육 ${d}%`,I:`훈육 ${d}% · 자유롭게 자랐어요`}[S.type]||'';
+}
 function makeSick(why){ if(S.sick||S.dead||S.gt<S.vitUntil)return; S.sick=true;S.sickT=0;S.mistakes++;event(why); }
 
 function sim(dt){
@@ -353,22 +358,22 @@ function sim(dt){
   S.nextPoop-=dt; if(S.nextPoop<=0){ if(S.poops<4)S.poops++; S.nextPoop=(90+Math.random()*60)*MIN; event('poop'); }
   S.nextDirt-=dt; if(S.nextDirt<=0){ if(S.dirt<3){S.dirt++; if(S.dirt===3)event('dirty')} S.nextDirt=3*HOUR*tr('dirt',1); }
   if(S.poops>0){S.poopDirtyT+=dt; if(S.poops>=(tr('poopTol',1)>1?4:3) || S.poopDirtyT>2*HOUR*tr('poopTol',1)) makeSick('sickPoop');} else S.poopDirtyT=0;
-  if(S.hunger===0){S.hungerZeroT+=dt; if(S.hungerZeroT>15*MIN&&!S.missH){S.missH=true;S.mistakes++;} if(S.hungerZeroT>2*HOUR) makeSick('sickHunger'); if(S.hungerZeroT>=5*HOUR&&!S.warnHunger){S.warnHunger=true;event('dangerHunger')} if(S.hungerZeroT>8*HOUR){die();return}}
+  if(S.hunger===0){S.hungerZeroT+=dt; if(S.hungerZeroT>30*MIN&&!S.missH){S.missH=true;S.mistakes++;} if(S.hungerZeroT>2*HOUR) makeSick('sickHunger'); if(S.hungerZeroT>=5*HOUR&&!S.warnHunger){S.warnHunger=true;event('dangerHunger')} if(S.hungerZeroT>8*HOUR){die();return}}
   else {S.hungerZeroT=0;S.missH=false;S.warnHunger=false;}
-  if(S.happy===0){S.happyZeroT+=dt; if(S.happyZeroT>15*MIN&&!S.missJ){S.missJ=true;S.mistakes++;}} else {S.happyZeroT=0;S.missJ=false;}
+  if(S.happy===0){S.happyZeroT+=dt; if(S.happyZeroT>30*MIN&&!S.missJ){S.missJ=true;S.mistakes++;}} else {S.happyZeroT=0;S.missJ=false;}
   // 떼쓰기 호출
-  if(S.fakeCall>0){S.fakeCall-=dt; if(S.fakeCall<=0){S.fakeCall=0;S.mistakes++;S.disc=Math.max(0,S.disc-10);}}
+  if(S.fakeCall>0){S.fakeCall-=dt; if(S.fakeCall<=0){S.fakeCall=0;S.disc=Math.max(0,S.disc-10);} /* 떼쓰기 무시: 훈육만 떨어져요(돌봄 실수 아님) */}
   else { S.nextFake-=dt; if(S.nextFake<=0){ S.nextFake=(S.stage==='baby'?(25+Math.random()*25):(60+Math.random()*60))*MIN*tr('fake',1);
       if(!S.sick&&S.hunger>0&&S.happy>0){S.fakeCall=15*MIN;event('fake')} } }
 }
 function evolve(){
   S.weight+=10; S.stage='adult';
   // 아기 때 돌봄 기록으로 유형 결정
-  S.type = (S.mistakes===0 && S.disc>=75) ? 'T'
-         : S.mistakes>=3 ? 'R'
+  S.type = S.mistakes>=4 ? 'R'
          : (S.snacks>=6 || S.weight>=FAT.baby) ? 'G'
          : ((S.wins||0)>=3 && S.disc<50) ? 'M'
          : (S.act||0)>=6 ? 'P'
+         : (S.mistakes===0 && S.disc>=100 && Math.random()<0.3) ? 'T'   /* 히든: 완벽하게 키워도 30% 확률 */
          : S.disc>=50 ? 'A' : 'I';
   event('grow');
 }
