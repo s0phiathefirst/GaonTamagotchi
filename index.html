@@ -103,6 +103,15 @@ details.settings summary:focus-visible{outline:2px solid var(--pink-deep);outlin
 .confirm{background:#fff4f7;border:1px solid var(--pink-rim);border-radius:14px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;font-size:15px}
 .confirm button{font:15px var(--font-body);border-radius:999px;padding:9px 16px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
 .confirm .yes{background:var(--pink-deep);color:#fff;border-color:var(--pink-deep)}
+.stk{display:flex;gap:14px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+.stk img{width:96px;height:auto;flex:none;image-rendering:auto;filter:drop-shadow(0 2px 4px rgba(60,30,50,.18))}
+.stk .tx{display:flex;flex-direction:column;gap:6px;min-width:0}
+.stk b{font-size:15px}
+.stk small{color:var(--muted);font-size:12.5px;line-height:1.45}
+.stk .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.stk a.dl{display:inline-flex;align-items:center;gap:4px;padding:7px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--pink-deep);font-size:13px;text-decoration:none;min-height:20px}
+.stk a.dl.main{background:var(--pink-deep);border-color:var(--pink-deep);color:#fff}
+.stk a.dl:focus-visible{outline:2px solid var(--pink-deep);outline-offset:2px}
 details.apt{background:var(--card);border:1px solid var(--line);border-radius:16px}
 details.apt summary{list-style:none;cursor:pointer;padding:12px 14px;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 details.apt summary::-webkit-details-marker{display:none}
@@ -168,6 +177,17 @@ details.apt summary:focus-visible{outline:2px solid var(--pink-deep);outline-off
     <span>지금 키우던 아이와 헤어지고 새 알을 받을까요? 포인트와 아이템은 그대로 남아요.</span>
     <span style="display:flex;gap:8px"><button id="noBtn">취소</button><button class="yes" id="yesBtn">새로 시작</button></span>
   </div>
+  <section class="stk" aria-labelledby="stkTitle">
+    <img src="stickers/onmagotchi_bald_sticker_40mm.png" alt="대머리 온마고치 스티커 미리보기">
+    <div class="tx">
+      <b id="stkTitle">대머리 온마고치 스티커</b>
+      <small>흰 테두리 · 투명 배경 PNG</small>
+      <div class="btns">
+        <a class="dl main" href="stickers/onmagotchi_bald_sticker.png" download="onmagotchi_bald_sticker.png">고화질 받기</a>
+        <a class="dl" href="stickers/onmagotchi_bald_sticker_40mm.png" download="onmagotchi_bald_sticker_40mm.png">40mm 인쇄용</a>
+      </div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -1441,6 +1461,15 @@ window.onmaPreview=(canvas,o,t)=>{
   ctx=keepCtx; S=JSON.parse(keepS); pdir=pd;
 };
 requestAnimationFrame(t=>{lastFrame=t;frame(t)});
+
+/* 스티커 받기: claude.ai 안에서는 downloads 기능으로, 일반 사이트에서는 링크 그대로 */
+(()=>{ let dl=null; try{ if(window.claude&&claude.use) claude.use('downloads').then(d=>{dl=d}).catch(()=>{}); }catch(e){}
+  document.querySelectorAll('.stk a.dl').forEach(a=>a.addEventListener('click',async e=>{
+    if(!dl) return; e.preventDefault();
+    try{ const h=a.getAttribute('href'); let blob; if(h.startsWith('data:')){const b=atob(h.split(',')[1]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);blob=new Blob([u],{type:'image/png'});} else blob=await (await fetch(h)).blob(); await dl.save({filename:a.getAttribute('download'),data:blob}); }
+    catch(err){ if(err&&err.code==='unavailable') dl=null; }
+  }));
+})();
 
 })();
 </script>
